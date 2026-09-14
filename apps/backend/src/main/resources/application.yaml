@@ -1,0 +1,64 @@
+spring:
+  application:
+    name: yorvix
+
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:yorvix}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # 首次启动自动执行 schema.sql / data.sql（幂等，可重复执行）
+  sql:
+    init:
+      mode: always
+      encoding: UTF-8
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+
+  jackson:
+    time-zone: Asia/Shanghai
+    date-format: yyyy-MM-dd HH:mm:ss
+
+# MyBatis-Plus：表结构由 schema.sql 统一管理，这里只做行为配置
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true   # password_hash -> passwordHash
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    banner: false
+    db-config:
+      id-type: auto                      # 数据库自增主键
+
+server:
+  port: 4838
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+
+yorvix:
+  token:
+    # access token 有效期（分钟）
+    expire-minutes: ${TOKEN_EXPIRE_MINUTES:120}
+    # refresh token 有效期（分钟），默认 7 天
+    refresh-expire-minutes: ${TOKEN_REFRESH_EXPIRE_MINUTES:10080}
+  security:
+    # 免鉴权路径（前缀匹配，默认至少保留登录/刷新/登出/错误页）
+    white-list:
+      - /api/auth/login
+      - /api/auth/refresh
+      - /api/auth/logout
+      - /error
+  init:
+    # 首次启动是否初始化内置种子账号（生产环境置为 false）
+    seed-enabled: ${SEED_ENABLED:true}
+
+logging:
+  level:
+    com.zmy.yorvix: debug
