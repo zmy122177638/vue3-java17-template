@@ -14,8 +14,10 @@ export type LoginEvent =
 
 export interface LoginLogItem {
   createdAt: string;
-  /** 补充信息的 i18n key（如 error.login.failed），成功/登出为 null */
+  /** 补充信息（按 Accept-Language 解析后的文案）；成功/登出为 null */
   detail?: null | string;
+  /** 补充信息的原始 i18n key，用于与后端应用日志、代码对照 */
+  detailKey?: null | string;
   event: LoginEvent;
   id: number;
   ip?: null | string;
@@ -29,8 +31,10 @@ export interface LoginLogItem {
 export interface OperLogItem {
   createdAt: string;
   durationMs: number;
-  /** 失败原因的 i18n key，成功为 null */
+  /** 失败原因（按 Accept-Language 解析后的文案），成功为 null */
   errorMessage?: null | string;
+  /** 失败原因的原始 i18n key，用于与后端应用日志、代码对照 */
+  errorMessageKey?: null | string;
   id: number;
   ip?: null | string;
   method: string;

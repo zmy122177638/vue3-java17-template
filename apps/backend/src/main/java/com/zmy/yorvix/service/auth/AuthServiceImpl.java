@@ -71,9 +71,11 @@ public class AuthServiceImpl implements AuthService {
       loginAttemptGuard.checkAllowed(username, client.ip());
     } catch (BizException e) {
       // 被限流的尝试也要留痕：这是"有人在撞库"最直接的信号，比单条失败更有研判价值。
-      // userId 故意留空而不是再查一次库——限流路径上不能再产生额外查询
+      // userId 故意留空而不是再查一次库——限流路径上不能再产生额外查询。
+      // 用**不带占位符**的审计专用 key：审计表只存 key、无法持久化"剩余分钟数"参数，
+      // 若直接用 error.login.locked，列表解析后会残留 {0}
       auditLogService.recordLogin(username, null, AuditLogService.LoginEvent.LOCKED,
-          e.getMessage(), client);
+          "error.login.locked.audit", client);
       throw e;
     }
 

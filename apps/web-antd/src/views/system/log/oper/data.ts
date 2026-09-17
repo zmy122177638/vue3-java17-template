@@ -104,12 +104,12 @@ export function useColumns(): VxeTableGridColumns<OperLogItem> {
       width: 100,
     },
     {
-      // 失败原因下发的是 i18n key（如 error.role.bound），展示原文便于与后端日志对照；
-      // 成功时为空值，用连字符占位避免"空列看起来像没记录"
+      // 后端下发两个字段：errorMessage 已按当前语言解析（直接展示），
+      // errorMessageKey 是原始 i18n key（挂在原生 title 上，便于与后端日志/代码对照）。
+      // 成功时两者都为空，用连字符占位避免"空列看起来像没记录"（渲染见 index.vue 的 slot）
       field: 'errorMessage',
-      formatter: ({ cellValue }) => cellValue || '—',
-      minWidth: 160,
-      showOverflow: 'tooltip',
+      minWidth: 180,
+      slots: { default: 'errorMessage' },
       title: $t('system.log.errorMessage'),
     },
     {

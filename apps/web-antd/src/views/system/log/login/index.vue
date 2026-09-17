@@ -56,6 +56,11 @@ const [Grid] = useVbenVxeGrid({
 </script>
 <template>
   <Page auto-content-height>
-    <Grid :table-title="$t('system.log.loginTitle')" />
+    <Grid :table-title="$t('system.log.loginTitle')">
+      <!-- 补充信息：展示已本地化的文案，悬停可看到原始 i18n key -->
+      <template #detail="{ row }">
+        <span :title="row.detailKey || ''">{{ row.detail || '—' }}</span>
+      </template>
+    </Grid>
   </Page>
 </template>

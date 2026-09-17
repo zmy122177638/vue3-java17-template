@@ -78,10 +78,10 @@ export function useColumns(): VxeTableGridColumns<LoginLogItem> {
       title: $t('system.log.userAgent'),
     },
     {
-      // 后端下发的是 i18n key（如 error.login.failed）：管理端展示原文便于与日志/代码对照
+      // detail 是已按当前语言解析的文案，detailKey 是原始 i18n key（挂在原生 title 上供对照）
       field: 'detail',
-      minWidth: 150,
-      showOverflow: 'tooltip',
+      minWidth: 170,
+      slots: { default: 'detail' },
       title: $t('system.log.detail'),
     },
     {

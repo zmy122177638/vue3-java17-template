@@ -116,11 +116,19 @@ async function generateAccess(options: GenerateMenuAndRoutesOptions) {
   return await generateAccessible(preferences.app.accessMode, {
     ...options,
     fetchMenuListAsync: async () => {
-      message.loading({
+      const hideLoading = message.loading({
         content: `${$t('common.loadingMenu')}...`,
-        duration: 1.5,
+        duration: 0,
+        // 与 views/system/user 的写法一致：同 key 复用同一条提示，
+        // 避免连续触发（如快速多次切换语言）时提示叠加成好几条
+        key: 'menu_loading_msg',
       });
-      return sanitizeMenuRoutes(await getAllMenusApi());
+      try {
+        return sanitizeMenuRoutes(await getAllMenusApi());
+      } finally {
+        // 成功、失败、超时都要关掉，否则提示会一直挂在页面上
+        hideLoading();
+      }
     },
     // 可以指定没有权限跳转403页面
     forbiddenComponent,

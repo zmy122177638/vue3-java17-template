@@ -57,6 +57,16 @@ const [Grid] = useVbenVxeGrid({
 </script>
 <template>
   <Page auto-content-height>
-    <Grid :table-title="$t('system.log.operTitle')" />
+    <Grid :table-title="$t('system.log.operTitle')">
+      <!--
+        失败原因：展示已按当前语言解析的文案；原始 i18n key 挂在原生 title 上，
+        悬停即可与后端日志、代码对照（这正是"审计只存 key"这一设计的原本价值）
+      -->
+      <template #errorMessage="{ row }">
+        <span :title="row.errorMessageKey || ''">
+          {{ row.errorMessage || '—' }}
+        </span>
+      </template>
+    </Grid>
   </Page>
 </template>

@@ -192,9 +192,11 @@ class AuthServiceImplTest {
 
     assertThat(thrown).isNotNull();
     assertThat(thrown.getCode()).isEqualTo(ResultCode.LOGIN_LOCKED.getCode());
-    // 被限流的尝试必须留痕（这是"有人在撞库"最直接的信号），且不能因此多查一次库
+    // 被限流的尝试必须留痕（这是"有人在撞库"最直接的信号），且不能因此多查一次库。
+    // 审计用的是**不带占位符**的专用 key：审计表只存 key、无法持久化"剩余分钟数"参数，
+    // 若沿用 error.login.locked，日志列表解析后会残留 {0}
     verify(auditLogService).recordLogin("alice", null, LoginEvent.LOCKED,
-        ResultCode.LOGIN_LOCKED.getMessageKey(), client);
+        "error.login.locked.audit", client);
     verifyNoInteractions(userMapper, passwordEncoder, tokenService);
   }
 
