@@ -7,8 +7,12 @@ import com.zmy.yorvix.request.auth.LoginRequest;
 import com.zmy.yorvix.request.auth.RefreshRequest;
 import com.zmy.yorvix.response.auth.LoginResponse;
 import com.zmy.yorvix.response.auth.LoginUserInfo;
+import com.zmy.yorvix.security.AuthContext;
+import com.zmy.yorvix.security.ClientInfo;
+import com.zmy.yorvix.security.ClientInfoResolver;
 import com.zmy.yorvix.security.TokenService;
 import com.zmy.yorvix.service.auth.AuthService;
+import com.zmy.yorvix.service.system.MenuService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -36,6 +40,9 @@ import java.util.List;
  *   <li>logout → 删除 Authorization 头中的 access token 与 Cookie 中 refresh token 对应的 Redis key；</li>
  *   <li>codes → 当前用户权限编码数组（按钮级权限控制）。</li>
  * </ul>
+ * <p><b>logout 必须携带 Authorization 头</b>：接口本身在白名单里（令牌过期也要能登出），
+ * 但"删除服务端 access token"这一步依赖请求头里的令牌。前端 {@code logoutApi} 负责带上它，
+ * 漏带时表现为"登出后旧 access token 仍然有效直到 TTL 结束"（见前端 api/core/auth.ts 的注释）。
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -48,12 +55,13 @@ public class AuthController {
   private final AuthService authService;
   private final TokenProperties tokenProperties;
   private final TokenService tokenService;
+  private final MenuService menuService;
 
   /** 登录（免鉴权）：签发 access token，并写入 refresh token Cookie */
   @PostMapping("/login")
   public Result<LoginResponse> login(@Valid @RequestBody LoginRequest request,
-      HttpServletResponse response) {
-    LoginResponse login = authService.login(request);
+      HttpServletRequest httpRequest, HttpServletResponse response) {
+    LoginResponse login = authService.login(request, clientInfo(httpRequest));
     writeRefreshCookie(response, login.getRefreshToken());
     return Result.ok(login);
   }
@@ -61,7 +69,7 @@ public class AuthController {
   /** 登出（免鉴权）：删除 Authorization 头中的 access token 与 Cookie 中 refresh token 的 Redis 记录 */
   @PostMapping("/logout")
   public Result<Void> logout(HttpServletRequest request, HttpServletResponse response) {
-    authService.logout(resolveBearerToken(request));
+    authService.logout(resolveBearerToken(request), clientInfo(request));
     tokenService.revokeRefresh(getCookieValue(request));
     clearRefreshCookie(response);
     return Result.ok();
@@ -82,10 +90,10 @@ public class AuthController {
     return login.getAccessToken();
   }
 
-  /** 当前用户访问码（模板默认为空数组；按钮级权限由各项目自行扩展） */
+  /** 当前用户按钮权限码（RBAC：按钮型菜单的 auth_code 集合，前端 v-access:code 数据源） */
   @GetMapping("/codes")
   public Result<List<String>> codes() {
-    return Result.ok(List.of());
+    return Result.ok(menuService.getAuthCodes(AuthContext.require()));
   }
 
   /** 当前登录用户信息（含角色与权限） */
@@ -101,11 +109,18 @@ public class AuthController {
     return Result.ok();
   }
 
+  /** 客户端信息（IP + User-Agent）：登录限流与审计日志的数据来源 */
+  private ClientInfo clientInfo(HttpServletRequest request) {
+    return ClientInfoResolver.resolve(request, tokenProperties.getSecurity().getClientIpHeader());
+  }
+
   private void writeRefreshCookie(HttpServletResponse response, String refreshToken) {
     response.addHeader(HttpHeaders.SET_COOKIE, ResponseCookie.from(REFRESH_COOKIE, refreshToken)
         .httpOnly(true)
         .path("/api/auth")
         .sameSite("Lax")
+        // HTTPS 环境必须为 true（prod profile 已置 true），否则该 Cookie 可能经明文请求发出
+        .secure(tokenProperties.getSecurity().isCookieSecure())
         .maxAge(Duration.ofSeconds(tokenProperties.getRefreshExpireMinutes() * 60))
         .build()
         .toString());
@@ -116,6 +131,7 @@ public class AuthController {
         .httpOnly(true)
         .path("/api/auth")
         .sameSite("Lax")
+        .secure(tokenProperties.getSecurity().isCookieSecure())
         .maxAge(Duration.ZERO)
         .build()
         .toString());

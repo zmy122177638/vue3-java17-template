@@ -72,8 +72,18 @@ export const authenticateResponseInterceptor = ({
       }
       // 如果正在刷新 token，则将请求加入队列，等待刷新完成
       if (client.isRefreshing) {
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
           client.refreshTokenQueue.push((newToken: string) => {
+            // 刷新失败时传进来的是空串：不能"以空 token 重放"——那会让排队请求退化成
+            // 一串匿名请求，各自 401 后又各自触发一轮刷新。必须直接 reject。
+            if (!newToken) {
+              reject(error);
+              return;
+            }
+            // 必须标记重试：否则重放请求若再次 401，会各自再发起一轮刷新（刷新风暴）。
+            // 注意"触发刷新的那个请求"的 config 是在下方单独标记的，
+            // 排队中的请求是各自独立的 config 对象。
+            config.__isRetryRequest = true;
             config.headers.Authorization = formatToken(newToken);
             resolve(client.request(config.url, { ...config }));
           });

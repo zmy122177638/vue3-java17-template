@@ -7,6 +7,15 @@
     "forgetPassword": "Forget Password",
     "profile": "Profile"
   },
+  "noPermission": {
+    "title": "No Access Permission",
+    "relogin": "Log out and sign in again",
+    "desc": {
+      "NO_ROLE": "This account has not been assigned any role. Please ask the super admin to assign permissions and log in again.",
+      "ROLE_DISABLED": "The role of this account has been disabled (or is no longer effective). Please ask an administrator to enable the role again and log in again.",
+      "NO_MENU": "The role of this account has no menu permission granted yet. Please ask an administrator to grant menu permissions and log in again."
+    }
+  },
   "dashboard": {
     "title": "Dashboard",
     "analytics": "Analytics",

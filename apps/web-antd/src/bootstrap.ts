@@ -1,9 +1,9 @@
-import { createApp, watchEffect } from 'vue';
+import { createApp, watch, watchEffect } from 'vue';
 
 import { registerAccessDirective } from '@vben/access';
 import { registerLoadingDirective } from '@vben/common-ui/es/loading';
 import { preferences } from '@vben/preferences';
-import { initStores } from '@vben/stores';
+import { initStores, useAccessStore } from '@vben/stores';
 import '@vben/styles';
 import '@vben/styles/antd';
 
@@ -15,6 +15,7 @@ import { initComponentAdapter } from './adapter/component';
 import { initSetupVbenForm } from './adapter/form';
 import App from './app.vue';
 import { router } from './router';
+import { refreshAccessMenus } from './router/access';
 
 async function bootstrap(namespace: string) {
   // 初始化组件适配器
@@ -59,6 +60,28 @@ async function bootstrap(namespace: string) {
   // 配置Motion插件
   const { MotionPlugin } = await import('@vben/plugins/motion');
   app.use(MotionPlugin);
+
+  // 切换语言后重新下发菜单
+  // 菜单标题由后端按请求头 Accept-Language 生成（见 MenuServiceImpl.resolveTitle），
+  // 仅切换本地语言包不会更新已有菜单标题，必须重新拉取一次
+  watch(
+    () => preferences.app.locale,
+    async (locale, prevLocale) => {
+      if (!prevLocale || locale === prevLocale) {
+        return;
+      }
+      const accessStore = useAccessStore();
+      // 未登录/菜单尚未生成时无需处理，登录时会自动下发
+      if (!accessStore.accessToken || !accessStore.isAccessChecked) {
+        return;
+      }
+      await refreshAccessMenus(router);
+      // 已打开标签页的标题由 refreshAccessMenus 同步；
+      // 面包屑/页面标题直接读当前路由的 matched.meta，仍持有旧记录，强制重新解析一次
+      const current = router.currentRoute.value;
+      await router.replace({ path: current.fullPath, force: true });
+    },
+  );
 
   // 动态更新标题
   watchEffect(() => {

@@ -7,6 +7,15 @@
     "forgetPassword": "忘记密码",
     "profile": "个人中心"
   },
+  "noPermission": {
+    "title": "暂无访问权限",
+    "relogin": "退出并重新登录",
+    "desc": {
+      "NO_ROLE": "当前账号未分配任何角色，请联系超级管理员分配权限后重新登录。",
+      "ROLE_DISABLED": "当前账号的角色已被禁用（或全部失效），请联系管理员重新启用该角色后重新登录。",
+      "NO_MENU": "当前账号的角色尚未授权任何菜单，请联系管理员补充菜单权限后重新登录。"
+    }
+  },
   "dashboard": {
     "title": "概览",
     "analytics": "分析页",

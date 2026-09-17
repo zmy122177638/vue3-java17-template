@@ -12,10 +12,10 @@ import lombok.Setter;
 @Setter
 public class ChangePasswordRequest {
 
-  @NotBlank(message = "原密码不能为空")
+  @NotBlank
   private String oldPassword;
 
-  @NotBlank(message = "新密码不能为空")
-  @Size(min = 8, max = 32, message = "新密码长度需在 8-32 位之间")
+  @NotBlank
+  @Size(min = 6, max = 32)
   private String newPassword;
 }

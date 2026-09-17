@@ -19,6 +19,11 @@ interface WebAntdPreferencesExtension {
 export const overridesPreferences = defineOverridesPreferences({
   // overrides
   app: {
+    accessMode: 'mixed', // 本地固定路由 + 后端菜单（/api/menu/all）合并下发
+    // 开启 access token 自动续期。该项默认值为 false，会让 access token 一过期
+    // （默认 120 分钟）就直接登出，后端实现的 refresh 轮换（HttpOnly Cookie + 7 天）
+    // 完全走不到。开启前需先修 preset-interceptors 的刷新队列（见该文件注释）。
+    enableRefreshToken: true,
     name: import.meta.env.VITE_APP_TITLE,
   },
   copyright: appCopyrightPreferences,

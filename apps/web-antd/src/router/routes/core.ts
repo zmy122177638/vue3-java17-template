@@ -36,7 +36,32 @@ const coreRoutes: RouteRecordRaw[] = [
     name: 'Root',
     path: '/',
     redirect: preferences.app.defaultHomePath,
-    children: [],
+    children: [
+      {
+        component: () => import('#/views/_core/profile/index.vue'),
+        meta: {
+          hideInBreadcrumb: true,
+          hideInMenu: true,
+          hideInTab: true,
+          title: $t('page.auth.profile'),
+        },
+        name: 'Profile',
+        path: '/profile',
+      },
+    ],
+  },
+  {
+    // 账号未分配任何角色/权限时的落地页（由 router/guard.ts 重定向过来）
+    component: () => import('#/views/_core/fallback/no-permission.vue'),
+    meta: {
+      hideInBreadcrumb: true,
+      hideInMenu: true,
+      hideInTab: true,
+      ignoreAccess: true,
+      title: $t('page.noPermission.title'),
+    },
+    name: 'NoPermission',
+    path: '/no-permission',
   },
   {
     component: AuthPageLayout,

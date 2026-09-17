@@ -1,5 +1,7 @@
 import type { Router } from 'vue-router';
 
+import type { CurrentUserInfo } from '#/api';
+
 import { LOGIN_PATH } from '@vben/constants';
 import { preferences } from '@vben/preferences';
 import { useAccessStore, useUserStore } from '@vben/stores';
@@ -9,6 +11,18 @@ import { accessRoutes, coreRouteNames } from '#/router/routes';
 import { useAuthStore } from '#/store';
 
 import { generateAccess } from './access';
+import { resolveHomePath } from './home-path';
+
+/**
+ * 当前用户的首页地址：全局配置 → 菜单树第一个可落地页面 → null（由调用方回落默认首页）。
+ * <p>菜单树里各节点的 path 已由 generateMenus 解析为最终绝对地址，可直接 router.push。
+ */
+function currentHomePath(): null | string {
+  const accessStore = useAccessStore();
+  const userStore = useUserStore();
+  const userInfo = userStore.userInfo as Partial<CurrentUserInfo> | undefined;
+  return resolveHomePath(accessStore.accessMenus, userInfo?.homePath);
+}
 
 /**
  * 通用守卫配置
@@ -55,9 +69,23 @@ function setupAccessGuard(router: Router) {
       if (to.path === LOGIN_PATH && accessStore.accessToken) {
         return decodeURIComponent(
           (to.query?.redirect as string) ||
-            userStore.userInfo?.homePath ||
+            currentHomePath() ||
             preferences.app.defaultHomePath,
         );
+      }
+      // 权限正常的用户被 redirect（如浏览器历史里的 /auth/login?redirect=/no-permission…）
+      // 带到“暂无权限”页时，弹回首页，避免误判成自己也没权限
+      if (
+        to.name === 'NoPermission' &&
+        accessStore.accessToken &&
+        accessStore.isAccessChecked
+      ) {
+        const userInfo = userStore.userInfo as
+          | Partial<CurrentUserInfo>
+          | undefined;
+        if (userInfo && !userInfo.permissionIssue) {
+          return currentHomePath() || preferences.app.defaultHomePath;
+        }
       }
       return true;
     }
@@ -107,9 +135,25 @@ function setupAccessGuard(router: Router) {
     accessStore.setAccessMenus(accessibleMenus);
     accessStore.setAccessRoutes(accessibleRoutes);
     accessStore.setIsAccessChecked(true);
+
+    // 无权限时落地“暂无权限”提示页，并按后端下发的原因（未分配角色 / 角色被禁用 /
+    // 角色无菜单授权）显示对应文案，避免用户按错误方向排查
+    const permissionIssue = (userInfo as Partial<CurrentUserInfo>)
+      .permissionIssue;
+    if (permissionIssue) {
+      return {
+        name: 'NoPermission',
+        query: { reason: permissionIssue },
+        replace: true,
+      };
+    }
+
+    // 首页由前端按**已生成的真实路由 + 菜单顺序**决定（accessMenus 此时已就绪）：
+    // 全局配置优先，否则菜单树前序第一个可落地页面，都没有则用默认首页
+    const homePath = currentHomePath();
     const redirectPath = (from.query.redirect ??
       (to.path === preferences.app.defaultHomePath
-        ? userInfo.homePath || preferences.app.defaultHomePath
+        ? homePath || preferences.app.defaultHomePath
         : to.fullPath)) as string;
 
     return {

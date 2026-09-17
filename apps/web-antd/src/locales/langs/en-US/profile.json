@@ -1,0 +1,20 @@
+{
+  "pageTitle": "Profile",
+  "tabBasic": "Basic Settings",
+  "tabPassword": "Change Password",
+  "username": "Username",
+  "usernameHelp": "The login account cannot be changed; contact an administrator if needed",
+  "nickname": "Nickname",
+  "nicknameHelp": "Shown in the header and elsewhere; falls back to the username when empty",
+  "email": "Email",
+  "phone": "Phone",
+  "scopeTip": "Only your own basic profile can be changed here; status, roles and other governance data are maintained by administrators",
+  "oldPassword": "Current Password",
+  "oldPasswordPlaceholder": "Enter your current password",
+  "newPassword": "New Password",
+  "newPasswordPlaceholder": "Enter a new password",
+  "confirmPassword": "Confirm Password",
+  "confirmPasswordPlaceholder": "Enter the new password again",
+  "passwordMismatch": "The two passwords do not match",
+  "passwordChanged": "Password changed successfully, please sign in with the new password"
+}

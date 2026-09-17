@@ -57,6 +57,43 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-json</artifactId>
     </dependency>
+    <!-- 健康检查（/actuator/health）：容器编排的存活/就绪探针需要它 -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+
+    <!--
+      Flyway：表结构版本化管理。
+      取代原来的 spring.sql.init + schema.sql —— 后者用 CREATE TABLE IF NOT EXISTS 保证幂等，
+      结构上无法给已存在的表补列，只能靠手工 ALTER，是"登录正常但所有接口 500"的经典来源。
+
+      注意用 spring-boot-starter-flyway 而不是单独的 flyway-core：
+      Spring Boot 4 把各技术的自动配置拆成了独立模块（spring-boot-flyway 等），
+      只把 flyway-core 放进 classpath 时**迁移根本不会执行**，而且不报错——
+      症状是"启动正常，但新加的表/列不存在"，最后被 StartupChecks 拦住才发现。
+      flyway-mysql 是 MySQL 方言支持（Flyway 10 起从 core 拆出），版本由 Boot BOM 管理。
+    -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-flyway</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-mysql</artifactId>
+    </dependency>
+
+    <!--
+      OpenAPI 文档：启动后 /swagger-ui.html 可交互调试，/v3/api-docs 为规范 JSON。
+      3.x 是 Spring Boot 4 / Spring Framework 7 线（2.x 只支持 Boot 3）。
+      生产建议关闭（application-prod.yaml 已置 springdoc.*.enabled=false），
+      否则会把完整接口面暴露给未认证访问者（这些路径不在 /api/** 下，不受鉴权拦截器保护）。
+    -->
+    <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+      <version>3.0.0</version>
+    </dependency>
 
     <dependency>
       <groupId>org.springframework.boot</groupId>

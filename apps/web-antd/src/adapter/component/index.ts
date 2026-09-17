@@ -41,6 +41,8 @@ import type {
 import type { Sortable } from '@vben/hooks';
 import type { Recordable } from '@vben/types';
 
+import type { I18nLangItem } from '#/components/i18n-input.vue';
+
 import {
   computed,
   defineAsyncComponent,
@@ -67,6 +69,8 @@ import { $t } from '@vben/locales';
 import { isEmpty } from '@vben/utils';
 
 import { message, Modal, notification } from 'ant-design-vue';
+
+import I18nInput from '#/components/i18n-input.vue';
 
 type AdapterUploadProps = UploadProps & {
   aspectRatio?: string;
@@ -164,6 +168,36 @@ const withDefaultPlaceholder = (
     },
   });
 };
+
+/**
+ * IconPicker 的表单适配：组件自身是 v-model:modelValue，且内部“点击图标只发
+ * update:modelValue、手动输入只发 change”，这里统一收敛成 v-model:modelValue，
+ * 保证编辑回显、点击选择、手动输入三种情况都能写回表单值。
+ */
+const IconPickerField = defineComponent({
+  name: 'IconPickerField',
+  inheritAttrs: false,
+  props: {
+    modelValue: { default: '', type: String },
+  },
+  emits: ['update:modelValue'],
+  setup(props, { attrs, emit }) {
+    const updateValue = (value: string) => emit('update:modelValue', value);
+    return () => {
+      // 组件由 IconPicker 内部用 <component :is> 渲染，类型上按 props 透传
+      const pickerProps: Recordable<any> = {
+        ...attrs,
+        iconSlot: 'addonAfter',
+        inputComponent: Input,
+        modelValue: props.modelValue,
+        modelValueProp: 'value',
+        onChange: updateValue,
+        'onUpdate:modelValue': updateValue,
+      };
+      return h(IconPicker, pickerProps);
+    };
+  },
+});
 
 const IMAGE_EXTENSIONS = new Set([
   'bmp',
@@ -608,6 +642,7 @@ export type ComponentType =
   | 'DatePicker'
   | 'DefaultButton'
   | 'Divider'
+  | 'I18nInput'
   | 'IconPicker'
   | 'Input'
   | 'InputNumber'
@@ -627,6 +662,12 @@ export type ComponentType =
   | 'Upload'
   | BaseFormComponentType;
 
+export interface I18nInputProps {
+  disabled?: boolean;
+  langs?: I18nLangItem[];
+  modelValue?: string;
+}
+
 /**
  * 与 {@link ComponentType} 中注册的组件名一一对应，便于 Schema 上 `component` + `componentProps` 联动提示
  */
@@ -641,6 +682,7 @@ export interface ComponentPropsMap {
   DatePicker: DatePickerProps;
   DefaultButton: ButtonProps;
   Divider: DividerProps;
+  I18nInput: I18nInputProps;
   IconPicker: IconPickerProps;
   Input: InputProps;
   InputNumber: InputNumberProps;
@@ -697,11 +739,8 @@ async function initComponentAdapter() {
       return h(Button, { ...props, attrs, type: 'default' }, slots);
     },
     Divider,
-    IconPicker: withDefaultPlaceholder(IconPicker, 'select', {
-      iconSlot: 'addonAfter',
-      inputComponent: Input,
-      modelValueProp: 'value',
-    }),
+    I18nInput,
+    IconPicker: withDefaultPlaceholder(IconPickerField, 'select'),
     Input: withDefaultPlaceholder(Input, 'input'),
     InputNumber: withDefaultPlaceholder(InputNumber, 'input', {
       style: { width: '100%' },

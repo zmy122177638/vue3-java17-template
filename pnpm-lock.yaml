@@ -488,10 +488,6 @@ overrides:
 importers:
 
   .:
-    dependencies:
-      sortablejs:
-        specifier: 'catalog:'
-        version: 1.15.7
     devDependencies:
       '@changesets/changelog-github':
         specifier: 'catalog:'
@@ -620,6 +616,9 @@ importers:
 
   apps/web-antd:
     dependencies:
+      '@vben-core/menu-ui':
+        specifier: workspace:*
+        version: link:../../packages/@core/ui-kit/menu-ui
       '@vben/access':
         specifier: workspace:*
         version: link:../../packages/effects/access

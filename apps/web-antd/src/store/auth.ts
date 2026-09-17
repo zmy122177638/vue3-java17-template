@@ -79,20 +79,28 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function logout(redirect: boolean = true) {
     try {
-      await logoutApi();
+      // 带上当前 accessToken：后端据此删除 Redis 里的令牌记录，
+      // 否则登出只清了前端状态，服务端令牌会一直有效到 TTL 结束。
+      await logoutApi(accessStore.accessToken);
     } catch {
       // 不做任何处理
     }
     resetAllStores();
     accessStore.setLoginExpired(false);
 
-    // 回登录页带上当前路由地址
+    // 回登录页带上当前路由地址。
+    // “暂无权限”页不能作为 redirect 带着走：否则下一个用户（哪怕权限正常）登录后
+    // 会被直接送回该页，看起来像“新账号也没有权限”
+    const currentRoute = router.currentRoute.value;
+    const needRedirect =
+      redirect &&
+      currentRoute.name !== 'NoPermission' &&
+      currentRoute.path !== LOGIN_PATH;
+
     await router.replace({
       path: LOGIN_PATH,
-      query: redirect
-        ? {
-            redirect: encodeURIComponent(router.currentRoute.value.fullPath),
-          }
+      query: needRedirect
+        ? { redirect: encodeURIComponent(currentRoute.fullPath) }
         : {},
     });
   }

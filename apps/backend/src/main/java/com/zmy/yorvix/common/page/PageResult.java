@@ -1,13 +1,13 @@
 package com.zmy.yorvix.common.page;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import lombok.Getter;
-import org.springframework.data.domain.Page;
 
 import java.util.List;
 import java.util.function.Function;
 
 /**
- * 通用分页结果。
+ * 通用分页结果（对接 MyBatis-Plus IPage）。
  */
 @Getter
 public class PageResult<T> {
@@ -26,9 +26,9 @@ public class PageResult<T> {
     this.totalPages = totalPages;
   }
 
-  public static <S, T> PageResult<T> of(Page<S> page, Function<S, T> mapper) {
-    List<T> list = page.getContent().stream().map(mapper).toList();
-    return new PageResult<>(list, page.getTotalElements(), page.getNumber() + 1,
-        page.getSize(), page.getTotalPages());
+  public static <S, T> PageResult<T> of(IPage<S> page, Function<S, T> mapper) {
+    List<T> list = page.getRecords().stream().map(mapper).toList();
+    return new PageResult<>(list, page.getTotal(), (int) page.getCurrent(),
+        (int) page.getSize(), (int) page.getPages());
   }
 }

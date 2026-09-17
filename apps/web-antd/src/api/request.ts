@@ -1,5 +1,16 @@
 /**
- * 该文件可自行根据业务逻辑进行调整
+ * 请求客户端的封装，是前后端契约在前端的落点（改动前请先读 CODEBUDDY.md §3）。
+ *
+ * 三个响应拦截器的注册顺序即处理优先级：
+ * 1. defaultResponseInterceptor  —— 按 `code === 0` 拆包，业务代码拿到的直接是 data；
+ * 2. authenticateResponseInterceptor —— 捕获后端返回的真实 HTTP 401，自动调用
+ *    `POST /api/auth/refresh` 换新 accessToken 并重放原请求，失败则登出；
+ * 3. errorMessageResponseInterceptor —— 兜底展示响应体 `message`
+ *    （后端已按 Accept-Language 本地化，前端不要再维护"错误码 → 文案"映射）。
+ *
+ * 两个导出实例的分工：
+ * - `requestClient` 声明了 `responseReturn: 'data'`，供业务接口使用；
+ * - `baseRequestClient` 返回完整响应，供 refresh / logout 等需要裸响应或自定义请求头的场景使用。
  */
 import type { RequestClientOptions } from '@vben/request';
 
@@ -56,6 +67,7 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
     return newToken;
   }
 
+  /** 组装 Authorization 头；无 token 时返回 null 而不是空串，避免发出 `Bearer ` 这类无效头 */
   function formatToken(token: null | string) {
     return token ? `Bearer ${token}` : null;
   }

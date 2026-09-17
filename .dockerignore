@@ -5,3 +5,5 @@ node_modules
 dist
 .turbo
 dist.zip
+# 后端 Maven 构建产物（前端镜像的构建上下文是仓库根，不排除会白白拷贝几十 MB）
+target

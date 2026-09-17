@@ -1,0 +1,66 @@
+# ============================================================
+# 生产环境覆盖配置：SPRING_PROFILES_ACTIVE=prod
+#
+# 本文件只放「与本地开发默认值不同、且漏配会造成事故」的项。
+# 设计前提：application.yaml 面向开箱即用的本地开发，因此生产必须激活本 profile。
+# 忘记激活时，StartupChecks 会在启动日志中打出醒目告警并列出需要设置的变量。
+# ============================================================
+
+spring:
+  datasource:
+    # 生产不复用 application.yaml 的开发默认值（root/root + useSSL=false +
+    # createDatabaseIfNotExist=true + allowPublicKeyRetrieval=true）。这几个参数**无法**
+    # 通过环境变量改写，必须在这里整体覆盖，否则生产会以明文连接、以 root 运行、并自动建库。
+    #
+    # 三项调整及原因：
+    #   1. 去掉 createDatabaseIfNotExist —— 生产不允许应用自动建库（连错库会静默成功），
+    #      库由 DBA 预建。
+    #   2. sslMode 默认 REQUIRED —— 连接必须 TLS 加密。若目标库尚未配置证书，
+    #      临时改用 DB_SSL_MODE=DISABLED 并同时设 DB_ALLOW_PUBLIC_KEY_RETRIEVAL=true
+    #      （MySQL 8 的 caching_sha2_password 在非加密通道下需要公钥检索），
+    #      然后尽快补上证书 —— 明文连库等于把口令暴露在链路上。
+    #   3. allowPublicKeyRetrieval 默认 false —— 该选项只在 sslMode=DISABLED 时才需要，
+    #      默认开启会让口令用「可被中间人替换的公钥」加密传输。
+    #
+    # ⚠️ 为什么默认值用 *_NOT_SET 这种哨兵串，而不是留空或保留 root/root：
+    #    Spring 对「无法解析的占位符」**不会报错** —— 绑定 @ConfigurationProperties 时
+    #    PropertySourcesPlaceholdersResolver 的 ignoreUnresolvablePlaceholders=true，
+    #    会把 ${DB_HOST} 原样保留，于是失败信息变成
+    #    「UnknownHostException: ${DB_HOST}」或「Access denied for user '${DB_USERNAME}'」，
+    #    完全指不到「少配了环境变量」这个真实原因。
+    #    用自解释的哨兵值后，同样的失败会直接显示 DB_HOST_NOT_SET / DB_USERNAME_NOT_SET，
+    #    一眼可定位；它也绝不可能巧合等于真实配置，因此不会像 root/root 那样
+    #    "悄悄回落到开发默认值"。
+    url: jdbc:mysql://${DB_HOST:DB_HOST_NOT_SET}:${DB_PORT:3306}/${DB_NAME:yorvix}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&sslMode=${DB_SSL_MODE:REQUIRED}&allowPublicKeyRetrieval=${DB_ALLOW_PUBLIC_KEY_RETRIEVAL:false}
+    username: ${DB_USERNAME:DB_USERNAME_NOT_SET}
+    password: ${DB_PASSWORD:DB_PASSWORD_NOT_SET}
+
+logging:
+  level:
+    # 关闭 debug：MyBatis 的 Slf4jImpl 会按 mapper 全限定名（com.zmy.yorvix.*）输出，
+    # debug 级别下 SQL 与**参数值**都会进日志（包含 password_hash）
+    com.zmy.yorvix: info
+
+# 关闭接口文档：/swagger-ui.html 与 /v3/api-docs 不在 /api/** 下，
+# 因此**不受鉴权拦截器保护**，开着等于把完整接口面（含参数结构）公开给匿名访问者。
+# 需要临时查看时用配置项单独打开，不要长期开放。
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+yorvix:
+  init:
+    # 绝不初始化种子账号：否则连上全新库会立刻出现一个 admin/弱口令的超管
+    seed-enabled: false
+  security:
+    # 受信来源（逗号分隔）。默认留空 = 不注册 CORS，只允许同源请求。
+    # 前后端由 Nginx 同源反代时保持留空即可；确实需要跨域时显式配置，不要使用 *。
+    cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:}
+    # HTTPS 下必须为 true，否则 refresh Cookie 可能经明文请求发出
+    cookie-secure: true
+    # 严格模式：上面三项（种子账号 / CORS 通配 / Cookie Secure）任一违规时**拒绝启动**，
+    # 而不是只打一行容易被容器编排淹没的告警（见 StartupChecks#verifyUnsafeDefaults）。
+    # 它只负责"prod 下配错也起不来"；漏设 SPRING_PROFILES_ACTIVE=prod 时本项不生效。
+    strict-mode: ${SECURITY_STRICT_MODE:true}

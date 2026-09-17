@@ -9,14 +9,14 @@ services:
       MYSQL_DATABASE: yorvix
       TZ: Asia/Shanghai
     ports:
-      - "3306:3306"
+      - '3306:3306'
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
     volumes:
       - yorvix_mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
+      test: [CMD, mysqladmin, ping, -h, localhost, -proot]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -25,15 +25,15 @@ services:
     image: redis:7-alpine
     container_name: yorvix-redis
     ports:
-      - "6379:6379"
+      - '6379:6379'
     command:
       - redis-server
       - --appendonly
-      - "yes"
+      - yes
     volumes:
       - yorvix_redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [CMD, redis-cli, ping]
       interval: 5s
       timeout: 3s
       retries: 20

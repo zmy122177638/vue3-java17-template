@@ -21,6 +21,10 @@ async function initSetupVbenForm() {
         Radio: 'checked',
         Switch: 'checked',
         Upload: 'fileList',
+        // 非 antd 组件（如自定义 I18nInput、IconPicker）走标准 v-model，
+        // 否则表单的 value 传不到组件、选中值也回写不到表单（图标/多语言文本会存空）
+        I18nInput: 'modelValue',
+        IconPicker: 'modelValue',
       },
     },
     rules: {

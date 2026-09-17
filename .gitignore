@@ -27,6 +27,11 @@ package-lock.json
 # local env files
 .env.local
 .env.*.local
+# 后端的 .env 只用于本地注入（模板是 .env.example，已入库），真实值一律不入库，
+# 避免 cp .env.example .env 填完生产密码后被 git add . 带上去。
+# 注意：前端的 .env / .env.development / .env.production 只含 VITE_ 公开变量、**必须入库**，
+# 所以不能用全局 `.env` 规则，只能按目录精确忽略。
+/apps/backend/.env
 .eslintcache
 
 logs
